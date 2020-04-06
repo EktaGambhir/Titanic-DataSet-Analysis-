@@ -1,0 +1,143 @@
+In [1]: import numpy as np
+         from sklearn.linear_model import LogisticRegression
+         import pandas as pd 
+         from sklearn import preprocessing
+
+In [2]: train_data = pd.read_csv("training_titanic_x_y_train.csv",delimiter=",")
+        test_data = pd.read_csv("test_titanic_x_test.csv",delimiter=",")
+
+In [3]: test_data.head()
+In [4]: train_data.head()
+
+In [5]: del train_data['Name'] del test_data["Name"]
+In [6]: del train_data['Ticket'] del test_data['Ticket']
+
+In [8]: train_data.Cabin.fillna("N",inplace = True)
+        test_data.Cabin.fillna("N",inplace = True)
+        
+In [12]: train_data.Cabin = [i[0] for i in train_data.Cabin] 
+         test_data.Cabin = [i[0] for i in test_data.Cabin] 
+         
+In [16]: train_data['Sex'] = train_data.Sex.apply(lambda x: 0 if x == "female" else 1) 
+         test_data['Sex'] = test_data.Sex.apply(lambda x: 0 if x == "female" else 1)
+         
+In [18]: train_data["has_cabin"] = [0 if i == 'N'else 1 for i in train_data.Cabin]
+         test_data["has_cabin"] = [0 if i == 'N'else 1 for i in test_data.Cabin]
+         
+In [23]: ## We are going to create a new feature "age" from the Age feature.
+         train_data['child'] = [1 if i<16 else 0 for i in train_data.Age] 
+         test_data['child'] = [1 if i<16 else 0 for i in test_data.Age] 
+         
+In [21]: train_data['family_size'] = train_data.SibSp + train_data.Parch+1
+         test_data['family_size'] = test_data.SibSp + test_data.Parch+1 
+         
+
+In [19]: def family_group(size):
+            a = '' 
+            if (size <= 1):
+              a = 'loner' 
+            elif (size <= 4): 
+              a = 'small' 
+            else:
+              a = 'large'
+            return a
+
+In [25]: train_data['family_group'] = train_data['family_size'].map(family_group)
+         test_data['family_group'] = test_data['family_size'].map(family_group)
+         
+
+In [26]: train_data['is_alone'] = [1 if i<2 else 0 for i in train_data.family_size]
+         test_data['is_alone'] = [1 if i<2 else 0 for i in test_data.family_size]
+         
+In [29]: train_data['calculated_fare'] = train_data.Fare/train_data.family_size 
+         test_data['calculated_fare'] = test_data.Fare/test_data.family_size
+         
+In [31]: def fare_group(fare):
+           a= '' 
+           if fare <= 4:
+             a = 'Very_low'
+           elif fare <= 10:
+             a = 'low'
+           elif fare <= 20:
+             a = 'mid' 
+           elif fare <= 45:
+             a = 'high' 
+           else: 
+             a = "very_high" 
+           return a 
+           
+In [32]: train_data['fare_group'] = train_data['calculated_fare'].map(fare_group) 
+         test_data['fare_group'] = test_data['calculated_fare'].map(fare_group)
+         
+         
+In [34]: train_data = pd.get_dummies(train_data, columns=["Pclass", 'Cabin','Embarked', 'family_group'] 
+
+         test_data = pd.get_dummies(test_data, columns=["Pclass",'Cabin','Embarked', 'family_group']
+
+In [39]: train_data.drop(['Cabin_T','Cabin_G', 'family_size', 'Fare'], axis=1, inplace=True)
+         test_data.drop(['family_size',"Fare"], axis=1, inplace=True)
+         
+In [40]: front = train_data['Age'] 
+                 train_data.drop(labels=['Age'], axis=1,inplace = True) 
+                 train_data.insert(0, 'Age', front)
+                 
+In [41]: front = test_data['Age'] 
+         test_data.drop(labels=['Age'], axis=1,inplace = True)
+         test_data.insert(0, 'Age', front)
+         
+In [42]: train_data.Age.fillna(train_data.Age.mean(),inplace=True) 
+         test_data.Age.fillna(test_data.Age.mean(),inplace=True)
+         
+In [43]: def age_group_fun(age):
+            a = ''
+            if age <= 1:
+              a = 'infant'
+            elif age <= 4: 
+              a = 'toddler' 
+            elif age <= 13: 
+              a = 'child' 
+            elif age <= 18:
+              a = 'teenager' 
+            elif age <= 35: 
+              a = 'Young_Adult'
+            elif age <= 45: 
+              a = 'adult' 
+            elif age <= 55: 
+              a = 'middle_aged' 
+            elif age <= 65: 
+              a = 'senior_citizen' 
+            else:
+             a = 'old' 
+            return a 
+         
+ In [44]: train_data['age_group'] = train_data['Age'].map(age_group_fun)
+          test_data['age_group'] = test_data['Age'].map(age_group_fun) 
+          
+ In [45]: train_data = pd.get_dummies(train_data,columns=['age_group'], drop_first=True) 
+          test_data = pd.get_dummies(test_data,columns=['age_group'], drop_first=True) 
+          
+ In [46]: X_train = train_data.drop(['Survived'], axis=1) Y_train = train_data["Survived"] 
+ In [47]: from sklearn.linear_model import LogisticRegression
+          clf = LogisticRegression() 
+          clf.fit(X_train,Y_train)
+          
+ In [48]: y_pred = clf.predict(test_data) y_train_pred = clf.predict(X_train)
+ In [49]: np.savetxt("Titanic_Predictions.csv",y_pred,fmt="%.2f") 
+ In [50]: from sklearn.metrics import confusion_matrix
+ 
+ In [51]: confusion_matrix(Y_train,y_train_pred)
+ 
+
+
+         
+
+         
+
+         
+         
+
+
+
+
+
+
